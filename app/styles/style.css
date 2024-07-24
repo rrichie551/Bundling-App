@@ -1,0 +1,154 @@
+.heading-plans{
+    text-align: center;
+    font-weight:700;
+    font-size:2em;
+    padding:20px 0px;
+}
+
+.price-box {
+    position: relative;
+    margin-top: 10px;
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    border: 2px solid #e2e2e2;
+    background-color: #fff;
+    padding: 20px;
+    cursor: pointer;
+    transition: .2s ease all;
+}
+.price-box.active{
+    border: 2px solid #303030;
+}
+.price-box h2{
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: bold;
+}
+.price-box span{
+    width: 13px;
+    height: 13px;
+    display: block;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border-radius: 100%;
+    background-color: #fff;
+    outline: 1px solid #e2e2e2;
+    transition: .2s ease all;
+}
+.price-box.active span{
+    outline: 2px solid #303030;
+    background-color: #303030;
+    border: 1px solid #fff;
+}
+.price-box .price-trial{
+    color: rgb(0, 91, 211);
+    margin-bottom: 40px;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.price-box .price-plan{
+    font-weight: bold;
+    font-size: 1.8em;
+    margin: 10px 0px 10px 0px;
+}
+.price-box ul{
+    padding-left: 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style-type: none;
+}
+.price-box ul li{
+    font-family: "Times New Roman",;
+    font-weight: 300;
+    font-size: 0.9em;
+    position: relative;
+    padding-left: 10px;
+}
+.price-box ul li::after{
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 9px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background-color: black;
+}
+
+.plan-button{
+    text-align: center;
+    padding-top:50px;
+}
+.top-bar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding:20px 40px;
+}
+.top-bar-text{
+    font-size: 1.5em;
+    font-weight: 500;
+}
+.offers-page-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.offers-page-text{
+    font-size: 1.5em;
+    font-weight: 700;
+}
+.offers-page-bottom{
+    padding-top: 40px;
+}
+.Polaris-EmptyState__Image{
+    opacity: 1 !important;
+}
+.offers-page-modal{
+    position: fixed;
+}
+.Polaris-Modal-Dialog__Modal .Polaris-LegacyCard::before{
+    border-radius: 0px !important;
+}
+.Polaris-Modal-Dialog__Modal .Polaris-LegacyCard{
+    border-radius: 0px !important;
+}
+.Polaris-Modal-Dialog__Modal .Polaris-Modal-Section section.Polaris-Box{
+    padding: 0px !important;
+}
+.Polaris-Modal-Section .Polaris-ShadowBevel .Polaris-Box:first-child{
+    padding: 0px !important;
+}
+.Polaris-Modal-Section .Polaris-ShadowBevel, .Polaris-Modal-Section .Polaris-ShadowBevel::before{
+    border-radius: 0px !important;
+}
+.bundle-discount-page-cont{
+    padding: 20px 40px;
+}
+.Polaris-FullscreenBar{
+    border-radius: 20px !important;
+}
+.Polaris-FullscreenBar__BackAction{
+    border-top-left-radius: 20px !important;
+    border-bottom-left-radius: 20px !important;
+}
+.bundle-discount-form-left{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.error-banner{
+    padding-bottom: 20px;
+}
+.products-add-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.products-list-item h3{
+    text-transform: capitalize !important;
+}
