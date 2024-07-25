@@ -246,6 +246,10 @@ const getOnClickHandler = () => {
                     selected={selectedRule}
                     onChange={handleChangeRule}
                   />
+                  <FormLayout>
+                  <TextField label="Discount %*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
+                  />
+                  </FormLayout>
               </BlockStack>
               </Card>
             </div>
