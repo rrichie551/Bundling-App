@@ -1,19 +1,48 @@
 import '../styles/style.css';
 import { useNavigate } from '@remix-run/react';
-import { Page, FullscreenBar, Text, Button, Card, BlockStack, FormLayout, TextField, Layout, ChoiceList, Banner, InlineError, ResourceList, ResourceItem } from '@shopify/polaris';
-import { useState, useCallback } from 'react';
+import { Page, FullscreenBar, Text, Button, Card, BlockStack, FormLayout, TextField, Layout, ChoiceList, Banner, InlineError, ResourceList, ResourceItem, Select } from '@shopify/polaris';
+import { useState, useCallback, useEffect } from 'react';
 import {DeleteIcon} from '@shopify/polaris-icons';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+
 
 export default function BundleDiscount() {
   const [selected, setSelected] = useState(['product']);
   const [selectedRule, setSelectedRule] = useState(['percentage']);
+  const [selectedDesk, setSelectedDesk] = useState(4);
+  const [selectedMob, setSelectedMob] = useState(2);
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState(['active']);
+  const [channels, setChannels] = useState(['both']);
   const [products, setProducts] = useState([]);
   const [variants, setVariants] = useState([]);
+  const [priority, setPriority] = useState(1);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState();
+  const [isClient, setIsClient] = useState(false);
 
-  console.log("BHai yeh hai value", selected);
-
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 const handleChange = useCallback((value) => setSelected(value), []);
+const handleStatus = useCallback((value) => setStatus(value), []);
+const handleChannels = useCallback((value) => setChannels(value), []);
 const handleChangeRule = useCallback((value) => setSelectedRule(value), []);
+const handleChangeDesk = useCallback((value) => {
+  setSelectedDesk(Number(value));
+}, []);
+
+const handlePriority = useCallback((value) => {
+  setPriority(Number(value))
+}, []);
+const handleChangeMob = useCallback((value) => {
+  setSelectedMob(Number(value));
+}, []);
+
+const handleDescriptionChange = useCallback((value) => {
+  setDescription(value);
+}, []);
 const [selectedItems, setSelectedItems] = useState([]);
 
 const resourceName = {
@@ -238,24 +267,174 @@ const getOnClickHandler = () => {
                 <Text as="h2" variant="headingSm" fontWeight="semibold">
                   Discount Rule
                 </Text>
-                 <ChoiceList
-                    choices={[
-                      {label: 'Percentage Discount', value: 'percentage'},
-                      {label: 'Fixed Amount Discount', value: 'fixed'},
-                    ]}
-                    selected={selectedRule}
-                    onChange={handleChangeRule}
-                  />
+                <div className="dicount-rules-block">
+                  <ChoiceList
+                      choices={[
+                        {label: 'Percentage Discount', value: 'percentage'},
+                        {label: 'Fixed Amount Discount', value: 'fixed'},
+                      ]}
+                      selected={selectedRule}
+                      onChange={handleChangeRule}
+                    />
+                  </div>
+                  <div className="discount-rules-fileds">
                   <FormLayout>
-                  <TextField label="Discount %*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
-                  />
+                    {selectedRule.includes('percentage') ?
+                     <TextField label="Discount %*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
+                     />:  <TextField label="Fixed Amount Discount*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
+                     />
+                    }
+                 
                   </FormLayout>
+                  </div>
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Bundle box view
+                </Text>
+                  <div className="discount-rules-fields">
+                  <Select
+                      label="Desktop Grid Per Row*"
+                      options={[
+                        {label: 1, value: 1},
+                        {label: 2, value: 2},
+                        {label: 3, value: 3},
+                        {label: 4, value: 4}
+                      ]}
+                      onChange={handleChangeDesk}
+                      value={selectedDesk}
+                    />
+                    <Select
+                      label="Mobile Grid Per Row*"
+                      options={[
+                        {label: 1, value: 1},
+                        {label: 2, value: 2}
+                      ]}
+                      onChange={handleChangeMob}
+                      value={selectedMob}
+                    />
+                  </div>
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Offer Details
+                </Text>
+                <div className="offer-view-block">
+                    <FormLayout>
+                      <TextField label="Offer Button Text*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
+                      />
+                      <TextField label="Offer Widget Title*" onChange={() => {}} autoComplete="off"  //error="Store name is required"
+                      />
+                    </FormLayout>
+                    <div className="offer-view-textarea">
+                    <TextField
+                          label="Description"
+                          value={description}
+                          onChange={handleDescriptionChange}
+                          multiline={4}
+                          autoComplete="off"
+                        />
+                        </div>
+                  </div>
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Bundle Preview
+                </Text>
+                <div className="bundle-preview-box">
+                  <div className="bundle-preview-box-top"></div>
+                  <div className="bundle-preview-box-total-btn">
+                    <div className="bundle-preview-box-total">
+                      Total Price : <span className='price'>Rs:0.00</span> <span className='discount'><strike>Rs:0.00</strike></span>
+                    </div>
+                    <div className="bundle-preview-box-btn">
+                      <Button variant="primary">Add To Cart</Button>
+                    </div>
+                  </div>
+                </div>
               </BlockStack>
               </Card>
             </div>
             </Layout.Section>
             <Layout.Section variant="oneThird">
-            <div className="bundle-discount-form-right"></div>
+            <div className="bundle-discount-form-right">
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Status
+                </Text>
+                 <ChoiceList
+                    choices={[
+                      {label: 'Active', value: 'active'},
+                      {label: 'Inactive', value: 'inactive'}
+                    ]}
+                    selected={status}
+                    onChange={handleStatus}
+                  />
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Offer channels
+                </Text>
+                <p className='greyP'>Offer will only work on selected sales channel.</p>
+                 <ChoiceList
+                    choices={[
+                      {label: 'Online Store & POS (both)', value: 'both'},
+                      {label: 'Online Store', value: 'online'},
+                      {label: 'Point of Sale', value: 'pos'}
+                    ]}
+                    selected={channels}
+                    onChange={handleChannels}
+                  />
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Priority
+                </Text>
+                  <div className="discount-rules-fields">
+                  <Select
+                      options={[
+                        {label: 1, value: 1},
+                        {label: 2, value: 2},
+                        {label: 3, value: 3},
+                        {label: 4, value: 4}
+                      ]}
+                      onChange={handlePriority}
+                      value={priority}
+                    />
+                  </div>
+                  <p className='greyP2'>In case a product/variant is present in two different bundles, the bundle with the highest priority (lowest number) will be shown and applied.</p>
+              </BlockStack>
+              </Card>
+              <div className="publishing-date-card-box">
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Publishing date
+                </Text>
+                  <div className="discount-rules-fields">
+                  {isClient && 
+                    <div className="dates-start-end">
+                    <DatePicker selected={startDate} onChange={(date) => setStartDate(date)}/>
+                    <DatePicker selected={endDate} onChange={(date) => setEndDate(date)}/>
+                    </div>
+                  }
+                  </div>
+
+              </BlockStack>
+              </Card>
+              </div>
+            </div>
             </Layout.Section>
           </Layout>
           </div>
