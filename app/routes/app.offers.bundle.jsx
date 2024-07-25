@@ -6,12 +6,14 @@ import {DeleteIcon} from '@shopify/polaris-icons';
 
 export default function BundleDiscount() {
   const [selected, setSelected] = useState(['product']);
+  const [selectedRule, setSelectedRule] = useState(['percentage']);
   const [products, setProducts] = useState([]);
   const [variants, setVariants] = useState([]);
 
   console.log("BHai yeh hai value", selected);
 
 const handleChange = useCallback((value) => setSelected(value), []);
+const handleChangeRule = useCallback((value) => setSelectedRule(value), []);
 const [selectedItems, setSelectedItems] = useState([]);
 
 const resourceName = {
@@ -229,6 +231,21 @@ const getOnClickHandler = () => {
                 
 
                     
+              </BlockStack>
+              </Card>
+              <Card>
+                <BlockStack gap="200">
+                <Text as="h2" variant="headingSm" fontWeight="semibold">
+                  Discount Rule
+                </Text>
+                 <ChoiceList
+                    choices={[
+                      {label: 'Percentage Discount', value: 'percentage'},
+                      {label: 'Fixed Amount Discount', value: 'fixed'},
+                    ]}
+                    selected={selectedRule}
+                    onChange={handleChangeRule}
+                  />
               </BlockStack>
               </Card>
             </div>
