@@ -27,12 +27,12 @@ export default function Offers() {
           <Link>{session.title}</Link> (#{session.id})
         </>, 
         session.type, 
-        session.offerOn, 
+        session.selected, 
         formatDate(session.startDate), 
         formatDate(session.endDate), 
         session.priority, 
-        <CustomSelect option={session.status ? 'Active' : 'Inactive'} />, 
-        session.action
+        <CustomSelect option={session.status === 'Active' ? 'Active' : 'Inactive'} />, 
+        session.channels
       ]);
       const [active, setActive] = useState(false);
 
