@@ -33,18 +33,30 @@ model Session {
 }
 
 model Offer {
-  id        Int      @id @default(autoincrement())
-  title     String
-  type      String
-  offerOn   String
-  startDate DateTime
-  endDate   DateTime
-  priority  Int
-  status    Boolean
-  action    String    @default("default")
-  userId    String
-  user      Session   @relation(fields: [userId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            Int      @id @default(autoincrement())
+  title         String
+  offerDesc     String?
+  selected      String   // You may want to use Enum here if possible
+  selectedRule  String   // You may want to use Enum here if possible
+  selectedDesk  Int
+  selectedMob   Int
+  description   String?
+  status        String   // You may want to use Enum here if possible
+  channels      String   // You may want to use Enum here if possible
+  products      String   // Store products as a JSON string
+  variants      String   // Store variants as a JSON string
+  priority      Int
+  startDate     DateTime?
+  endDate       DateTime?
+  percenDisc    String?
+  fixDisc       String?
+  widgetTitle   String
+  btnText       String
+  action        String   @default("default")
+  userId        String
+  user          Session  @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  type          String 
 }
+
