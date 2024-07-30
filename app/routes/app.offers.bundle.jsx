@@ -106,6 +106,14 @@ const  handleProducts = async ()=>{
       draft: false,
       archived: false,
     },
+    selectionIds: [
+      {
+        id: 'gid://shopify/Product/12345',
+      },
+      {
+        id: 'gid://shopify/Product/67890',
+      },
+    ],
     action: "add", 
     multiple: true
   });
