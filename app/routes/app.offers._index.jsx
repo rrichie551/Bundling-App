@@ -1,7 +1,6 @@
 import { format } from "date-fns";
-import { Page, ButtonGroup, Button, DataTable, EmptyState, Modal, Frame, Card, Text, ResourceList, ResourceItem, Avatar, Badge } from '@shopify/polaris';
-import { Link, useLoaderData } from "@remix-run/react";
-import CustomSelect from './popover';
+import { Page, ButtonGroup, Button, DataTable, EmptyState, Modal, Frame, Card, Text, ResourceList, ResourceItem, Avatar, Badge, Spinner, Link } from '@shopify/polaris';
+import { useLoaderData, useNavigation } from "@remix-run/react";
 import prisma from '../db.server';
 import {useState, useCallback} from 'react';
 import '../styles/style.css';
@@ -19,10 +18,11 @@ export async function loader() {
     return format(date, "dd MMM 'at' hh:mm a");
   }
 export default function Offers() {
+    const navigation = useNavigation();
     const {data: sessions } = useLoaderData();
     const rows = sessions.map((session) => [
         <>
-          <Link to={`/app/offers/${session.id}/edit`}>{session.title}</Link> (#{session.id})
+          <Link monochrome url={`/app/offers/${session.id}/edit`}>{session.title}</Link> (#{session.id})
         </>, 
         session.type, 
         <div className="offer-on-bundle">{session.selected}</div>, 
@@ -37,6 +37,7 @@ export default function Offers() {
   const toggleModal = useCallback(() => setActive((active) => !active), []);
   return (
     <div className="offers-page">
+         {navigation.state !== "idle" ? <div className="loader-spinner"><Spinner accessibilityLabel="Spinner example" size="large" /></div>: <>
         <div className="top-bar">
             <div className="top-bar-text">
                 All Offers
@@ -214,6 +215,7 @@ export default function Offers() {
             </Modal>
         </Frame>
         </div>
+        </>}
     </div>
   )
 }

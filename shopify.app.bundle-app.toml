@@ -3,7 +3,7 @@
 client_id = "0858a266f58f827ed434295ce5a634b0"
 name = "Bundle App"
 handle = "bundle-app-141"
-application_url = "https://zoom-annotation-strand-lemon.trycloudflare.com"
+application_url = "https://mouse-provides-rpm-additional.trycloudflare.com"
 embedded = true
 
 [build]
@@ -17,9 +17,9 @@ scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://zoom-annotation-strand-lemon.trycloudflare.com/auth/callback",
-  "https://zoom-annotation-strand-lemon.trycloudflare.com/auth/shopify/callback",
-  "https://zoom-annotation-strand-lemon.trycloudflare.com/api/auth/callback"
+  "https://mouse-provides-rpm-additional.trycloudflare.com/auth/callback",
+  "https://mouse-provides-rpm-additional.trycloudflare.com/auth/shopify/callback",
+  "https://mouse-provides-rpm-additional.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
