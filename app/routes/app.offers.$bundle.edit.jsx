@@ -1,51 +1,11 @@
 import '../styles/style.css';
-import { useNavigate, Form, redirect, useLoaderData } from '@remix-run/react';
+import { useNavigate, Form, useLoaderData, useNavigation } from '@remix-run/react';
 import { Page, FullscreenBar, Text, Button, Card, BlockStack, FormLayout, TextField, Layout, ChoiceList, Banner, InlineError, ResourceList, ResourceItem, Select, Spinner } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from 'react';
 import {DeleteIcon} from '@shopify/polaris-icons';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-
-
-export const action = async ({ request, params }) => {
-const discountId = params ? params.bundle : undefined;
-  const formData = await request.formData();
-  const session = await prisma.session.findFirst();
-    if (!session) {
-      throw new Error("No session found. Please ensure you have at least one session in the database.");
-    }
-
-  const offerData = {
-    title: formData.get('title'),
-    offerDesc: formData.get('offerDesc'),
-    selected:formData.get('selected'), 
-    selectedRule:formData.get('selectedRule'),
-    selectedDesk: Number(formData.get('selectedDesk')),
-    selectedMob: Number(formData.get('selectedMob')),
-    description: formData.get('description'),
-    status:formData.get('status'),
-    channels:formData.get('channels'), 
-    products: formData.get('products'), 
-    variants: formData.get('variants'),
-    priority: Number(formData.get('priority')),
-    startDate: formData.get('startDate') ? new Date(formData.get('startDate')) : new Date(),
-    endDate: formData.get('endDate') ? new Date(formData.get('endDate')) : null,
-    percenDisc: formData.get('percenDisc'),
-    fixDisc: formData.get('fixDisc'),
-    widgetTitle: formData.get('widgetTitle'),
-    btnText: formData.get('btnText'),
-    type: 'Bundle Discount',
-    userId: session.id
-    
-  };
-
-  await prisma.offer.update({
-    where: { id: Number(discountId) },
-    data: offerData,
-  });
-
-  return redirect('/app/offers');
-};
+import { authenticate } from "../shopify.server";
 
 export async function loader({params}) {
     const discountId = params ? params.bundle : undefined;
@@ -58,39 +18,38 @@ export async function loader({params}) {
           id: Number(discountId)
         }
       });
-    console.log("This is the data",discountData);  
     return discountData;
   }
 
 export default function BundleEdit() {
+const navigation = useNavigation();
   const data = useLoaderData();  
-  console.log("This is the data", data)
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(JSON.parse(data?.products));
   const [titleError, setTitleError] = useState(false)
   const [ruleError, setRuleError] = useState(false);
   const [productError, setProductError] = useState(false);
   const [bannerError, setBannerError] = useState(false);
   const [formData, setFormData] = useState({
-    title: data.title,
-    offerDesc: data.offerDesc,
-    selected: [`${data.selected}`],
-    selectedRule: [`${data.selectedRule}`],
-    selectedDesk: data.selectedDesk,
-    selectedMob: data.selectedMob,
-    description: data.description,
-    status: [`${data.status}`],
-    channels: [`${data.channels}`],
-    products: JSON.parse(data.products),
-    variants: JSON.parse(data.variants),
-    priority: data.priority,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    percenDisc: data.percenDisc,
-    fixDisc: data.fixDisc,
-    widgetTitle: data.widgetTitle,
-    btnText: data.btnText
+    title: data?.title,
+    offerDesc: data?.offerDesc,
+    selected: [`${data?.selected}`],
+    selectedRule: [`${data?.selectedRule}`],
+    selectedDesk: data?.selectedDesk,
+    selectedMob: data?.selectedMob,
+    description: data?.description,
+    status: [`${data?.status}`],
+    channels: [`${data?.channels}`],
+    products: JSON.parse(data?.products),
+    variants: JSON.parse(data?.variants),
+    priority: data?.priority,
+    startDate: data?.startDate,
+    endDate: data?.endDate,
+    percenDisc: data?.percenDisc,
+    fixDisc: data?.fixDisc,
+    widgetTitle: data?.widgetTitle,
+    btnText: data?.btnText
   });
 
   useEffect(() => {
@@ -98,7 +57,7 @@ export default function BundleEdit() {
   }, []);
 const handleTitle = useCallback((value) => setFormData((prevData) => ({ ...prevData, title: value })), []);
 const handleDesc = useCallback((value) => setFormData((prevData) => ({ ...prevData, offerDesc: value })), []);  
-const handleChange = useCallback((value) =>  setFormData((prevData) => ({ ...prevData, selected: value })), []);
+const handleChange = useCallback((value) =>  setFormData((prevData) => ({ ...prevData, selected: value, products:[] })), []);
 const handleStatus = useCallback((value) => setFormData((prevData) => ({ ...prevData, status: value })), []);
 const handleChannels = useCallback((value) => setFormData((prevData) => ({ ...prevData, channels: value })), []);
 const handleChangeRule = useCallback((value) => setFormData((prevData) => ({ ...prevData, selectedRule: value })), []);
@@ -118,6 +77,7 @@ plural: 'products',
 };
 
 const  handleProducts = async ()=>{
+const selectionIds = products.length > 0 ? products.map(product => ({ id: product.id })) : [];
   const productsList = await window.shopify.resourcePicker({
     type: "product",
     filter: {
@@ -126,6 +86,7 @@ const  handleProducts = async ()=>{
       draft: false,
       archived: false,
     },
+    selectionIds,
     action: "add", 
     multiple: true
   });
@@ -142,6 +103,7 @@ const  handleProducts = async ()=>{
 }
 
 const  handleVariants = async ()=>{
+    const selectionIds = products.length > 0 ? products.map(product => ({ id: product.id })) : [];
   const variantsList = await window.shopify.resourcePicker({
     type: "variant",
     filter: {
@@ -149,6 +111,7 @@ const  handleVariants = async ()=>{
       draft: false,
       archived: false,
     },
+    selectionIds,
     action: "add", 
     multiple: true
   });
@@ -159,31 +122,21 @@ const  handleVariants = async ()=>{
   }));
   setFormData((prevData) => ({
     ...prevData,
-    variants: selectedVariants
+    products: selectedVariants
   }));
 }
 
 const promotedBulkActions = [
 {
-  content: 'Edit customers',
-  onAction: () => console.log('Todo: implement bulk edit'),
-},
-];
-
-const bulkActions = [
-{
-  content: 'Add tags',
-  onAction: () => console.log('Todo: implement bulk add tags'),
-},
-{
-  content: 'Remove tags',
-  onAction: () => console.log('Todo: implement bulk remove tags'),
-},
-{
-  icon: DeleteIcon,
-  destructive: true,
-  content: 'Delete customers',
-  onAction: () => console.log('Todo: implement bulk delete'),
+    icon: DeleteIcon,
+    destructive: true,
+    content: 'Delete',
+    onAction: () => {
+        setFormData((prevData) => ({
+            ...prevData,
+            products: prevData.products.filter(product => !selectedItems.includes(product.id))
+          }));
+    }
 },
 ];
 const getOnClickHandler = () => {
@@ -236,7 +189,6 @@ const getOnClickHandler = () => {
       }
       if(key === 'channels' || key === 'status' || key === 'selectedRule' || key === 'selected'){
         input.value = value[0];
-        console.log("Final value: " + value[0])
       }
       else if (typeof value === 'object') {
         input.value = JSON.stringify(value);
@@ -245,11 +197,11 @@ const getOnClickHandler = () => {
       }
       form.appendChild(input);
     });
-    console.log("Final Fom before submitting", form);
     form.submit();
   }, [title, products,channels,status,selectedRule,selected, percenDisc, formData]);
   return (
     <div className="bundle-discount-page">
+         {navigation.state !== "idle" ? <div className="loader-spinner"><Spinner accessibilityLabel="Spinner example" size="large" /></div> : <>
       <div className="bundle-discount-page-cont">
         <FullscreenBar onAction={()=>{navigate("../offers")}}>
           <div
@@ -363,10 +315,9 @@ const getOnClickHandler = () => {
                     selectedItems={selectedItems}
                     onSelectionChange={setSelectedItems}
                     promotedBulkActions={promotedBulkActions}
-                    bulkActions={bulkActions}
                   /> : <ResourceList
                   resourceName={resourceName}
-                  items={variants}
+                  items={products}
                   renderItem={(item) => {
                     const {id, url, name} = item;
                     return (
@@ -386,7 +337,6 @@ const getOnClickHandler = () => {
                   selectedItems={selectedItems}
                   onSelectionChange={setSelectedItems}
                   promotedBulkActions={promotedBulkActions}
-                  bulkActions={bulkActions}
                 />
                     }  
                   </BlockStack>
@@ -577,6 +527,48 @@ const getOnClickHandler = () => {
           </div>
         </Page>
         </div>
+        </>}
       </div> 
   )
 }
+
+export const action = async ({ request, params }) => {
+    const { admin,redirect } = await authenticate.admin(request);
+    const discountId = params ? params.bundle : undefined;
+      const formData = await request.formData();
+      const session = await prisma.session.findFirst();
+        if (!session) {
+          throw new Error("No session found. Please ensure you have at least one session in the database.");
+        }
+    
+      const offerData = {
+        title: formData.get('title'),
+        offerDesc: formData.get('offerDesc'),
+        selected:formData.get('selected'), 
+        selectedRule:formData.get('selectedRule'),
+        selectedDesk: Number(formData.get('selectedDesk')),
+        selectedMob: Number(formData.get('selectedMob')),
+        description: formData.get('description'),
+        status:formData.get('status'),
+        channels:formData.get('channels'), 
+        products: formData.get('products'), 
+        variants: formData.get('variants'),
+        priority: Number(formData.get('priority')),
+        startDate: formData.get('startDate') === 'null' ? new Date() : new Date(formData.get('startDate')),
+        endDate: formData.get('endDate') === 'null' ? null :  new Date(formData.get('endDate')),
+        percenDisc: formData.get('percenDisc'),
+        fixDisc: formData.get('fixDisc'),
+        widgetTitle: formData.get('widgetTitle'),
+        btnText: formData.get('btnText'),
+        type: 'Bundle Discount',
+        userId: session.id
+        
+      };
+    
+      await prisma.offer.update({
+        where: { id: Number(discountId) },
+        data: offerData,
+      });
+    
+      return redirect('/app/offers');
+    };
