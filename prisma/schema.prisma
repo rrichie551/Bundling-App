@@ -29,10 +29,10 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
-  offers        Offer[]
+  offers        Bundle[]
 }
 
-model Offer {
+model Bundle {
   id            Int      @id @default(autoincrement())
   title         String
   offerDesc     String?

@@ -13,7 +13,7 @@ export async function loader({params}) {
     if (!session) {
       throw new Error("No session found. Please ensure you have at least one session in the database.");
     }
-    const discountData  = await prisma.offer.findFirst({
+    const discountData  = await prisma.bundle.findFirst({
         where: {
           id: Number(discountId)
         }
@@ -565,7 +565,7 @@ export const action = async ({ request, params }) => {
         
       };
     
-      await prisma.offer.update({
+      await prisma.bundle.update({
         where: { id: Number(discountId) },
         data: offerData,
       });

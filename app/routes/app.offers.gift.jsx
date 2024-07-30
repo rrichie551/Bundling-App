@@ -7,7 +7,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { authenticate } from "../shopify.server";
 
-export default function BundleDiscount() {
+export default function FreeGift() {
   const navigation = useNavigation();
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -201,14 +201,14 @@ const getOnClickHandler = () => {
           >
             <div style={{marginLeft: '1rem', flexGrow: 1}}>
               <Text variant="headingLg" as="p">
-                Bundle Discount
+                Free Gift
               </Text>
             </div>
               <Button variant="primary" onClick={handleFinalFormSub}>
               {loading ? (
                                 <Spinner accessibilityLabel="Small spinner example" size="small" />
                                     ) : (
-                                    'Save Bundle'
+                                    'Save'
                                 )}
               </Button>
           </div>
@@ -549,7 +549,7 @@ export const action = async ({ request }) => {
     
   };
 
-  await prisma.bundle.create({ data: offerData });
+  await prisma.offer.create({ data: offerData });
 
   return redirect('/app/offers');
 };

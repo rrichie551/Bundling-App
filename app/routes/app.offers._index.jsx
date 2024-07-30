@@ -148,42 +148,42 @@ export default function Offers() {
                         },
                         {
                             id: '200',
-                            url: '#',
+                            url: 'gift',
                             name: 'Free Gift',
                             location: 'Offer a complimentary item to incentivize larger purchases.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/3656/3656900.png'
                         },
                         {
                             id: '300',
-                            url: '#',
+                            url: 'bulk',
                             name: 'Volume/Bulk Discount',
                             location: 'Provide a discount for customers purchasing in bulk to increase order sizes.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/15838/15838518.png'
                         },
                         {
                             id: '400',
-                            url: '#',
+                            url: 'whole',
                             name: 'Wholesale/General Discount',
                             location: 'Offer reduced prices for bulk purchases to attract wholesale buyers.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/8205/8205367.png'
                         },
                         {
                             id: '500',
-                            url: '#',
+                            url: 'bogo',
                             name: 'Bogo Discount',
                             location: 'Encourage customers to purchase more items with buy one, get one free deals.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/3876/3876268.png'
                         },
                         {
                             id: '600',
-                            url: '#',
+                            url: 'cart',
                             name: 'Cart Conditional Discount',
                             location: 'Offer a discount based on the total cart value to increase average order value.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/11730/11730264.png'
                         },
                         {
                             id: '700',
-                            url: '#',
+                            url: 'post',
                             name: 'Post Purchase/ Aftersell',
                             location: 'Provide exclusive offers to customers after they complete their purchase, before the thank you page.',
                             avatarSource: 'https://cdn-icons-png.flaticon.com/512/3910/3910427.png'
