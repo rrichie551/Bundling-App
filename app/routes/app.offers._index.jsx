@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Page, ButtonGroup, Button, DataTable, EmptyState, Modal, Frame, Card, Text, ResourceList, ResourceItem, Avatar } from '@shopify/polaris';
+import { Page, ButtonGroup, Button, DataTable, EmptyState, Modal, Frame, Card, Text, ResourceList, ResourceItem, Avatar, Badge } from '@shopify/polaris';
 import { Link, useLoaderData } from "@remix-run/react";
 import CustomSelect from './popover';
 import prisma from '../db.server';
@@ -20,19 +20,17 @@ export async function loader() {
   }
 export default function Offers() {
     const {data: sessions } = useLoaderData();
-    console.log(sessions);
-
     const rows = sessions.map((session) => [
         <>
-          <Link>{session.title}</Link> (#{session.id})
+          <Link to={`/app/offers/${session.id}/edit`}>{session.title}</Link> (#{session.id})
         </>, 
         session.type, 
-        session.selected, 
+        <div className="offer-on-bundle">{session.selected}</div>, 
         formatDate(session.startDate), 
         formatDate(session.endDate), 
         session.priority, 
-        <CustomSelect option={session.status === 'Active' ? 'Active' : 'Inactive'} />, 
-        session.channels
+        <Badge tone={session.status === 'active' ? 'success' : 'complete'}>{session.status}</Badge>, 
+        <div className="offer-on-bundle">{session.channels}</div>
       ]);
       const [active, setActive] = useState(false);
 
@@ -80,7 +78,7 @@ export default function Offers() {
                 'End date',
                 'Priority',
                 'Status',
-                'Action'
+                'Channels'
             ]}
             rows={rows}
             pagination={{
@@ -108,7 +106,7 @@ export default function Offers() {
                 'End date',
                 'Priority',
                 'Status',
-                'Action'
+                'Channels'
             ]}
             rows={[[
             <EmptyState

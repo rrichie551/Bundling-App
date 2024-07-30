@@ -1,5 +1,5 @@
 import '../styles/style.css';
-import { useNavigate, Form, redirect } from '@remix-run/react';
+import { useNavigate, Form, redirect, useLoaderData } from '@remix-run/react';
 import { Page, FullscreenBar, Text, Button, Card, BlockStack, FormLayout, TextField, Layout, ChoiceList, Banner, InlineError, ResourceList, ResourceItem, Select, Spinner } from '@shopify/polaris';
 import { useState, useCallback, useEffect } from 'react';
 import {DeleteIcon} from '@shopify/polaris-icons';
@@ -7,7 +7,8 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
 
-export const action = async ({ request }) => {
+export const action = async ({ request, params }) => {
+const discountId = params ? params.bundle : undefined;
   const formData = await request.formData();
   const session = await prisma.session.findFirst();
     if (!session) {
@@ -38,13 +39,32 @@ export const action = async ({ request }) => {
     
   };
 
-  await prisma.offer.create({ data: offerData });
+  await prisma.offer.update({
+    where: { id: Number(discountId) },
+    data: offerData,
+  });
 
   return redirect('/app/offers');
 };
 
+export async function loader({params}) {
+    const discountId = params ? params.bundle : undefined;
+    const session = await prisma.session.findFirst();
+    if (!session) {
+      throw new Error("No session found. Please ensure you have at least one session in the database.");
+    }
+    const discountData  = await prisma.offer.findFirst({
+        where: {
+          id: Number(discountId)
+        }
+      });
+    console.log("This is the data",discountData);  
+    return discountData;
+  }
 
-export default function BundleDiscount() {
+export default function BundleEdit() {
+  const data = useLoaderData();  
+  console.log("This is the data", data)
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -53,24 +73,24 @@ export default function BundleDiscount() {
   const [productError, setProductError] = useState(false);
   const [bannerError, setBannerError] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    offerDesc: '',
-    selected: ['product'],
-    selectedRule: ['percentage'],
-    selectedDesk: 4,
-    selectedMob: 2,
-    description: '',
-    status: ['active'],
-    channels: ['both'],
-    products: [],
-    variants: [],
-    priority: 1,
-    startDate: null,
-    endDate: null,
-    percenDisc: '',
-    fixDisc: '',
-    widgetTitle: 'Buy together and save',
-    btnText: 'Add to Cart'
+    title: data.title,
+    offerDesc: data.offerDesc,
+    selected: [`${data.selected}`],
+    selectedRule: [`${data.selectedRule}`],
+    selectedDesk: data.selectedDesk,
+    selectedMob: data.selectedMob,
+    description: data.description,
+    status: [`${data.status}`],
+    channels: [`${data.channels}`],
+    products: JSON.parse(data.products),
+    variants: JSON.parse(data.variants),
+    priority: data.priority,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    percenDisc: data.percenDisc,
+    fixDisc: data.fixDisc,
+    widgetTitle: data.widgetTitle,
+    btnText: data.btnText
   });
 
   useEffect(() => {
@@ -251,7 +271,7 @@ const getOnClickHandler = () => {
               {loading ? (
                                 <Spinner accessibilityLabel="Small spinner example" size="small" />
                                     ) : (
-                                    'Save Bundle'
+                                    'Update Bundle'
                                 )}
               </Button>
           </div>

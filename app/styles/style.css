@@ -242,3 +242,6 @@ align-items: center;
     top: 20px;
     z-index: 2;
 }
+.offer-on-bundle{
+    text-transform: capitalize;
+}
