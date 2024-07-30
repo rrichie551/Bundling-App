@@ -36,13 +36,13 @@ model Offer {
   id            Int      @id @default(autoincrement())
   title         String
   offerDesc     String?
-  selected      String   // You may want to use Enum here if possible
-  selectedRule  String   // You may want to use Enum here if possible
+  selected      String   @default("default")   // You may want to use Enum here if possible
+  selectedRule  String   @default("default")  // You may want to use Enum here if possible
   selectedDesk  Int
   selectedMob   Int
   description   String?
-  status        String   // You may want to use Enum here if possible
-  channels      String   // You may want to use Enum here if possible
+  status        String   @default("default")   // You may want to use Enum here if possible
+  channels      String   @default("default")   // You may want to use Enum here if possible
   products      String   // Store products as a JSON string
   variants      String   // Store variants as a JSON string
   priority      Int
