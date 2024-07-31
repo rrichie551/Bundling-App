@@ -4,13 +4,20 @@ import { useLoaderData, useNavigation } from "@remix-run/react";
 import prisma from '../db.server';
 import {useState, useCallback} from 'react';
 import '../styles/style.css';
+import { authenticate } from "../shopify.server";
 
-export async function loader() {
- 
-   const sessions = await prisma.offer.findMany();
-    return{
-        data: sessions
+export async function loader({request}) {
+    const {session} = await authenticate.admin(request);
+   const sessions = await prisma.session.findUnique({
+    where: {
+        id: session.id
+      },
+    include: {
+      offers: true
     }
+  });
+
+  return sessions;
   }
   
   function formatDate(dateString) {
@@ -19,8 +26,9 @@ export async function loader() {
   }
 export default function Offers() {
     const navigation = useNavigation();
-    const {data: sessions } = useLoaderData();
-    const rows = sessions.map((session) => [
+    const sessions  = useLoaderData();
+    console.log(sessions.offers);
+    const rows = sessions?.offers?.map((session) => [
         <>
           <Link monochrome url={`/app/offers/${session.id}/edit`}>{session.title}</Link> (#{session.id})
         </>, 
@@ -59,7 +67,7 @@ export default function Offers() {
             </div>
         </div>
         <div className="offers-page-bottom">
-            { sessions.length > 0 ?
+            { sessions?.offers?.length > 0 ?
         <DataTable
             columnContentTypes={[
                 'text',

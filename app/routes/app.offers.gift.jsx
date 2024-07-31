@@ -12,6 +12,8 @@ export default function FreeGift() {
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [selectedItemsVariants, setSelectedItemsVariants] = useState([]);
+  const [selectedItemsCollections, setSelectedItemsCollections] = useState([]);
   const [titleError, setTitleError] = useState(false)
   const [ruleError, setRuleError] = useState(false);
   const [productError, setProductError] = useState(false);
@@ -19,7 +21,7 @@ export default function FreeGift() {
   const [formData, setFormData] = useState({
     title: '',
     offerDesc: '',
-    selected: ['product'],
+    selected: ['allProducts'],
     selectedRule: ['percentage'],
     selectedDesk: 4,
     selectedMob: 2,
@@ -28,6 +30,7 @@ export default function FreeGift() {
     channels: ['both'],
     products: [],
     variants: [],
+    collections: [],
     priority: 1,
     startDate: null,
     endDate: null,
@@ -90,7 +93,7 @@ const  handleProducts = async ()=>{
 const  handleVariants = async ()=>{
   const selectionIds = products.length > 0 ? products.map(product => ({ id: product.id })) : [];
   const variantsList = await window.shopify.resourcePicker({
-    type: "variant",
+    type: "products",
     filter: {
       hidden: false,
       draft: false,
@@ -107,9 +110,33 @@ const  handleVariants = async ()=>{
   }));
   setFormData((prevData) => ({
     ...prevData,
-    products: selectedVariants
+    variants: selectedVariants
   }));
 }
+
+const handleCollections = async ()=>{
+const selectionIds = collections.length > 0 ? collections.map(collection => ({ id: collection.id })) : [];
+  const variantsList = await window.shopify.resourcePicker({
+    type: "collection",
+    filter: {
+      hidden: false,
+      draft: false,
+      archived: false,
+    },
+    selectionIds,
+    action: "add", 
+    multiple: true
+  });
+  const selectedCollections = variantsList.map(variant => ({
+    id: variant.id,
+    name: variant.title,
+    url: variant.onlineStoreUrl || '#'
+  }));
+  setFormData((prevData) => ({
+    ...prevData,
+    collections: selectedCollections
+  }));
+};
 
 const promotedBulkActions = [
 {
@@ -124,15 +151,44 @@ const promotedBulkActions = [
 }
 }
 ];
+const promotedBulkActionsVariants = [
+    {
+      content: 'Delete',
+      icon: DeleteIcon,
+      destructive: true,
+      onAction: () => {
+        setFormData((prevData) => ({
+            ...prevData,
+            variants: prevData.variants.filter(variant => !selectedItemsVariants.includes(variant.id))
+          }));
+    }
+    }
+    ];
+    const promotedBulkActionsCollections = [
+        {
+          content: 'Delete',
+          icon: DeleteIcon,
+          destructive: true,
+          onAction: () => {
+            setFormData((prevData) => ({
+                ...prevData,
+                collections: prevData.collections.filter(collection => !selectedItemsCollections.includes(collection.id))
+              }));
+        }
+        }
+        ];    
 const getOnClickHandler = () => {
-  if (selected.includes('product')) {
+  if (selected.includes('products')) {
     return handleProducts;
-  } else {
+  } else if(selected.includes('variants')) {
     return handleVariants;
+  }
+  else{
+    return handleCollections;
   }
 };
   const navigate = useNavigate();
-  const { title, offerDesc, selected, selectedRule, selectedDesk, selectedMob, description, status, channels, products, variants, priority, startDate, endDate, percenDisc, fixDisc, widgetTitle, btnText } = formData;
+  const { title, offerDesc, selected, selectedRule, selectedDesk, selectedMob, description, status, channels, products, variants, collections, priority, startDate, endDate, percenDisc, fixDisc, widgetTitle, btnText } = formData;
   const handleFinalFormSub = useCallback(() => {
     setLoading(true);
     const form = document.getElementById('bundleDiscountForm');
@@ -206,10 +262,10 @@ const getOnClickHandler = () => {
             </div>
               <Button variant="primary" onClick={handleFinalFormSub}>
               {loading ? (
-                                <Spinner accessibilityLabel="Small spinner example" size="small" />
-                                    ) : (
-                                    'Save'
-                                )}
+                <Spinner accessibilityLabel="Small spinner example" size="small" />
+                    ) : (
+                    'Save'
+                )}
               </Button>
           </div>
         </FullscreenBar>
@@ -257,27 +313,36 @@ const getOnClickHandler = () => {
                     </Text>
                     <ChoiceList
                         choices={[
-                          {label: 'Product', value: 'product',  helpText: "Offer bundle discount on full product."},
-                          {label: 'Variants', value: 'variants',  helpText: "Offer bundle discount on selected variants instead of full product."},
+                          {label: 'All Products', value: 'allProducts',  helpText: "No product/collection selection Discount will apply on cart total if condition satisfy"},
+                          {label: 'Products', value: 'products',  helpText: "Selected products only"},
+                          {label: 'Variants', value: 'variants',  helpText: "Selected variants only"},
+                          {label: 'Collections', value: 'collections',  helpText: "Selected collections only"},
                         ]}
                         selected={selected}
                         onChange={handleChange}
                       />
                   </BlockStack>
                   </Card>
+                  {selected.includes('allProducts') ? <></>:<>
                   <Card>
                     <BlockStack gap="200">
                       <div className="products-add-top">
                       <Text as="h2" variant="headingSm" fontWeight="semibold">
-                      Choose products
+                        {selected.includes('products') && <>Choose products</>}
+                        {selected.includes('variants') && <>Choose products</>}
+                        {selected.includes('collections') && <>Choose collections</>}
                       </Text>
-                      <Button variant="plain" onClick={getOnClickHandler()}>Add Products</Button>
+                      <Button variant="plain" onClick={getOnClickHandler()}>
+                      {selected.includes('products') && <>Add Products</>}
+                      {selected.includes('variants') && <>Add products</>}
+                      {selected.includes('collections') && <>Add collections</>}
+                        </Button>
                       </div>
                       {productError &&
                         <InlineError message="At-least one product is required." fieldID="myFieldID" />
                       }
                     {
-                    selected.includes('product') ?   <ResourceList
+                    selected.includes('products') &&  <ResourceList
                     resourceName={resourceName}
                     items={products}
                     renderItem={(item) => {
@@ -300,9 +365,9 @@ const getOnClickHandler = () => {
                     selectedItems={selectedItems}
                     onSelectionChange={setSelectedItems}
                     promotedBulkActions={promotedBulkActions}
-                  /> : <ResourceList
+                  /> }{selected.includes('variants') && <ResourceList
                   resourceName={resourceName}
-                  items={products}
+                  items={variants}
                   renderItem={(item) => {
                     const {id, url, name} = item;
                     return (
@@ -319,13 +384,39 @@ const getOnClickHandler = () => {
                       </div>
                     );
                   }}
-                  selectedItems={selectedItems}
-                  onSelectionChange={setSelectedItems}
-                  promotedBulkActions={promotedBulkActions}
+                  selectedItems={selectedItemsVariants}
+                  onSelectionChange={setSelectedItemsVariants}
+                  promotedBulkActions={promotedBulkActionsVariants}
                 />
-                    }  
+                    }
+                    {selected.includes('collections') && <ResourceList
+                  resourceName={resourceName}
+                  items={collections}
+                  renderItem={(item) => {
+                    const {id, url, name} = item;
+                    return (
+                      <div className='products-list-item'>
+                      <ResourceItem
+                        id={id}
+                        url={url}
+                        accessibilityLabel={`View details for ${name}`}
+                      >
+                        <Text variant="bodyMd" fontWeight="bold" as="h3">
+                          {name}
+                        </Text>
+                      </ResourceItem>
+                      </div>
+                    );
+                  }}
+                  selectedItems={selectedItemsCollections}
+                  onSelectionChange={setSelectedItemsCollections}
+                  promotedBulkActions={promotedBulkActionsCollections}
+                />
+                    }
+
                   </BlockStack>
                   </Card>
+                  </>}
                   <Card>
                     <BlockStack gap="200">
                     <Text as="h2" variant="headingSm" fontWeight="semibold">
@@ -348,7 +439,6 @@ const getOnClickHandler = () => {
                         />:  <TextField label="Fixed Amount Discount*" onChange={handlePercen} value={percenDisc} autoComplete="off"  error={ruleError ? "Some value is required" : ""}
                         />
                         }
-                    
                       </FormLayout>
                       </div>
                   </BlockStack>
