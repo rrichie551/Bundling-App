@@ -13,11 +13,16 @@ export async function loader({request}) {
         id: session.id
       },
     include: {
-      offers: true
+      offers: true,
+      gifts:true
     }
   });
+  if (!sessions) {
+    return null;
+  }
 
-  return sessions;
+  const combinedArray = [...sessions.offers, ...sessions.gifts];
+  return combinedArray;
   }
   
   function formatDate(dateString) {
@@ -27,10 +32,10 @@ export async function loader({request}) {
 export default function Offers() {
     const navigation = useNavigation();
     const sessions  = useLoaderData();
-    console.log(sessions.offers);
-    const rows = sessions?.offers?.map((session) => [
+    console.log(sessions);
+    const rows = sessions?.map((session) => [
         <>
-          <Link monochrome url={`/app/offers/${session.id}/edit`}>{session.title}</Link> (#{session.id})
+          <Link monochrome url={`/app/${session.type === 'Bundle Discount' ? 'bundle' : session.type === 'Free Gift' ? 'gift' : 'bundle'}/${session.id}/edit`}>{session.title}</Link> (#{session.id})
         </>, 
         session.type, 
         <div className="offer-on-bundle">{session.selected}</div>, 
@@ -67,7 +72,7 @@ export default function Offers() {
             </div>
         </div>
         <div className="offers-page-bottom">
-            { sessions?.offers?.length > 0 ?
+            { sessions?.length > 0 ?
         <DataTable
             columnContentTypes={[
                 'text',
@@ -163,7 +168,7 @@ export default function Offers() {
                         },
                         {
                             id: '300',
-                            url: 'bulk',
+                            url: 'volume',
                             name: 'Volume/Bulk Discount',
                             location: 'Provide a discount for customers purchasing in bulk to increase order sizes.',
                              avatarSource: 'https://cdn-icons-png.flaticon.com/512/15838/15838518.png'

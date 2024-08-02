@@ -7,7 +7,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { authenticate } from "../shopify.server";
 
-export default function BundleDiscount() {
+export default function VolumeDiscount() {
   const navigation = useNavigation();
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,25 +16,23 @@ export default function BundleDiscount() {
   const [ruleError, setRuleError] = useState(false);
   const [productError, setProductError] = useState(false);
   const [bannerError, setBannerError] = useState(false);
+  const [levelError, setLevelError] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
+    amount: '1.00',
     offerDesc: '',
     selected: ['product'],
-    selectedRule: ['percentage'],
-    selectedDesk: 4,
-    selectedMob: 2,
-    description: '',
+    options: ['all'],
+    selectedRule: ['exactM'],
     status: ['active'],
     channels: ['both'],
-    products: [],
-    variants: [],
+    resources: [],
     priority: 1,
+    discountLevels: [{ quantity: '', discountType: 'fixed', discountValue: '' }],
     startDate: null,
     endDate: null,
     percenDisc: '',
-    fixDisc: '',
-    widgetTitle: 'Buy together and save',
-    btnText: 'Add to Cart'
+    fixDisc: ''
   });
 
   useEffect(() => {
@@ -43,8 +41,15 @@ export default function BundleDiscount() {
 
   const handleInputChange = useCallback((key, value) => {
     if(key === 'selected'){
-        setFormData((prevData) => ({ ...prevData, products:[] }));
+        setFormData((prevData) => ({ ...prevData, resources:[] }));
         setFormData((prevData) => ({ ...prevData, [key]:value }));
+    }
+    else if(key === 'options'){
+      setFormData((prevData) => ({ ...prevData, resources:[] }));
+      setFormData((prevData) => ({ ...prevData, [key]:value }));
+    }
+    else if(key === 'selectedRule'){
+
     }
     else{
         setFormData((prevData) => ({ ...prevData, [key]: value }));
@@ -52,13 +57,49 @@ export default function BundleDiscount() {
    
   }, []);  
 
+  const handleAddLevel = useCallback(() => {
+    const hasEmptyFields = formData.discountLevels.some(level =>
+      level.quantity === '' || level.discountType === '' || level.discountValue === ''
+    );
+  
+    if (hasEmptyFields) {
+      setLevelError(true);
+      return;
+    } else {
+      setLevelError(false);
+    }
+
+    const newLevel = {
+      quantity: '',
+      discountType: '',
+      discountValue: ''
+    };
+    setFormData((prevData) => ({
+      ...prevData,
+      discountLevels: [...prevData.discountLevels, newLevel]
+    }));
+  }, [setFormData]);
+  
+  const handleLevelChange = useCallback((index, key, value) => {
+    const newLevels = [...formData.discountLevels];
+    console.log(
+      "This is the new level",
+       newLevels[0].discountType
+    )
+    newLevels[index][key] = value;
+    setFormData((prevData) => ({
+      ...prevData,
+      discountLevels: newLevels
+    }));
+  }, [formData.discountLevels, setFormData]);
+
   const resourceName = {
     singular: 'product',
     plural: 'products',
   };
 
   const handleResourcePicker = async (type) => {
-    const selectionIds = formData.products.length > 0 ? formData.products.map(product => ({ id: product.id })) : [];
+    const selectionIds = formData.resources.length > 0 ? formData.resources.map(product => ({ id: product.id })) : [];
     const resourceList = await window.shopify.resourcePicker({
       type: type,
       filter: {
@@ -81,14 +122,18 @@ export default function BundleDiscount() {
   
     setFormData((prevData) => ({
       ...prevData,
-      products: selectedResources
+      resources: selectedResources
     }));
   };
   
   const getOnClickHandler = useMemo(() => {
-    return formData.selected.includes('product') 
-      ? () => handleResourcePicker('product') 
-      : () => handleResourcePicker('variant');
+    if (formData.selected.includes('product')) {
+      return () => handleResourcePicker('product');
+    } else if (formData.selected.includes('variants')) {
+      return () => handleResourcePicker('variant');
+    } else if (formData.selected.includes('collections')) {
+      return () => handleResourcePicker('collection');
+    }
   }, [formData.selected]);
   
 
@@ -100,7 +145,7 @@ export default function BundleDiscount() {
       onAction: () => {
         setFormData((prevData) => ({
           ...prevData,
-          products: prevData.products.filter(product => !selectedItems.includes(product.id))
+          resources: prevData.resources.filter(product => !selectedItems.includes(product.id))
         }));
         setSelectedItems([]); 
       }
@@ -118,7 +163,7 @@ export default function BundleDiscount() {
       setLoading(false);
       return;
     }
-    if (formData.products.length === 0) {
+    if (formData.resources.length === 0) {
       setProductError(true);
       setTitleError(false);
       setBannerError(true);
@@ -172,14 +217,14 @@ export default function BundleDiscount() {
             >
               <div style={{ marginLeft: '1rem', flexGrow: 1 }}>
                 <Text variant="headingLg" as="p">
-                  Bundle Discount
+                  Volume/Bulk Discount
                 </Text>
               </div>
               <Button variant="primary" onClick={handleFinalFormSub}>
                 {loading ? (
                   <Spinner accessibilityLabel="Small spinner example" size="small" />
                 ) : (
-                  'Save Bundle'
+                  'Save'
                 )}
               </Button>
             </div>
@@ -228,189 +273,137 @@ export default function BundleDiscount() {
                           </Text>
                           <ChoiceList
                             choices={[
-                              { label: 'Product', value: 'product', helpText: "Offer bundle discount on full product." },
-                              { label: 'Variants', value: 'variants', helpText: "Offer bundle discount on selected variants instead of full product." },
+                              { label: 'Product', value: 'product', helpText: "You can select the full product for the volume discount" },
+                              { label: 'Variant', value: 'variants', helpText: "Instead of selecting the entire product, you can choose specific variants of the product." },
+                              { label: 'Collection', value: 'collections', helpText: "Instead of selecting the entire product or variant, you can choose a specific collection" },
+                              { label: 'Cart Quantity', value: 'quantity', helpText: "Volume discount based on cart quantity" }
                             ]}
                             selected={formData.selected}
                             onChange={(value) => handleInputChange('selected', value)}
                           />
                         </BlockStack>
                       </Card>
+                      {formData.selected.includes('quantity') ? <></>:
                       <Card>
                         <BlockStack gap="200">
-                          <div className="products-add-top">
-                            <Text as="h2" variant="headingSm" fontWeight="semibold">
-                              Choose products
-                            </Text>
-                            <Button variant="plain" onClick={getOnClickHandler}>Add Products</Button>
-                          </div>
-                          {productError &&
-                            <InlineError message="At-least one product is required." fieldID="myFieldID" />
-                          }
-                          {formData.selected.includes('product') ? (
-                            <ResourceList
-                              resourceName={resourceName}
-                              items={formData.products}
-                              renderItem={(item) => {
-                                const { id, name, location } = item;
-                                return (
-                                  <div className='products-list-item'>
-                                    <ResourceItem
-                                      id={id}
-                                      accessibilityLabel={`View details for ${name}`}
-                                    >
-                                      <Text variant="bodyMd" fontWeight="bold" as="h3">
-                                        {name}
-                                      </Text>
-                                      <div><i>{location}</i></div>
-                                    </ResourceItem>
-                                  </div>
-                                );
-                              }}
-                              selectedItems={selectedItems}
-                              onSelectionChange={setSelectedItems}
-                              promotedBulkActions={promotedBulkActions}
-                            />
-                          ) : (
-                            <ResourceList
-                              resourceName={resourceName}
-                              items={formData.products}
-                              renderItem={(item) => {
-                                const { id, name } = item;
-                                return (
-                                  <div className='products-list-item'>
-                                    <ResourceItem
-                                      id={id}
-                                      accessibilityLabel={`View details for ${name}`}
-                                    >
-                                      <Text variant="bodyMd" fontWeight="bold" as="h3">
-                                        {name}
-                                      </Text>
-                                    </ResourceItem>
-                                  </div>
-                                );
-                              }}
-                              selectedItems={selectedItems}
-                              onSelectionChange={setSelectedItems}
-                              promotedBulkActions={promotedBulkActions}
-                            />
-                          )}
+                          <Text as="h2" variant="headingSm" fontWeight="semibold">
+                            Product Options
+                          </Text>
+                          <ChoiceList
+                            choices={[
+                              { label: 'All', value: 'all' },
+                              { label: 'Custom Selection', value: 'custom' }
+                            ]}
+                            selected={formData.options}
+                            onChange={(value) => handleInputChange('options', value)}
+                          />
                         </BlockStack>
                       </Card>
+                      }
+                      {formData.options.includes('all') || formData.selected.includes('quantity') ? <></> : 
+                      <Card>
+                      <BlockStack gap="200">
+                        <div className="products-add-top">
+                          <Text as="h2" variant="headingSm" fontWeight="semibold">
+                            {formData.selected.includes('product') && <>Choose products</> }
+                            {formData.selected.includes('variants') && <>Choose products</> }
+                            {formData.selected.includes('collections') && <>Choose collections</> }
+                          </Text>
+                          <Button variant="plain" onClick={getOnClickHandler}>
+                          {formData.selected.includes('product') && <> Add Products</> }
+                          {formData.selected.includes('variants') && <> Add Products</> }
+                          {formData.selected.includes('collections') && <> Add Collections</> }
+                        </Button>
+                        </div>
+                        {productError &&
+                          <InlineError message="At-least one product is required." fieldID="myFieldID" />
+                        }
+                          <ResourceList
+                            resourceName={resourceName}
+                            items={formData.resources}
+                            renderItem={(item) => {
+                              const { id, name, location } = item;
+                              return (
+                                <div className='products-list-item'>
+                                  <ResourceItem
+                                    id={id}
+                                    accessibilityLabel={`View details for ${name}`}
+                                  >
+                                    <Text variant="bodyMd" fontWeight="bold" as="h3">
+                                      {name}
+                                    </Text>
+                                    {formData.selected.includes('products') && <div><i>{location}</i></div>}
+                                  </ResourceItem>
+                                </div>
+                              );
+                            }}
+                            selectedItems={selectedItems}
+                            onSelectionChange={setSelectedItems}
+                            promotedBulkActions={promotedBulkActions}
+                          />
+                      </BlockStack>
+                    </Card>
+                      }
+                       <Card>
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingSm" fontWeight="semibold">
+                        Offer threshold
+                        </Text>
+                        <FormLayout>
+                          <TextField label="Minimum Cart Subtotal (Threshold Amount)*" autoComplete="off" value={formData.amount}
+                            onChange={(value) => handleInputChange('amount', value)} 
+                          />
+                          <p className='greyP2'>It will verify the cart total before applying any discounts.</p>
+                        </FormLayout>
+                      </BlockStack>
+                    </Card>
                       <Card>
                         <BlockStack gap="200">
                           <Text as="h2" variant="headingSm" fontWeight="semibold">
                             Discount Rule
                           </Text>
-                          <div className="dicount-rules-block">
+                         
                             <ChoiceList
                               choices={[
-                                { label: 'Percentage Discount', value: 'percentage' },
-                                { label: 'Fixed Amount Discount', value: 'fixed' },
+                                { label: 'Apply to exact or more than quantity (Volume)', value: 'exactM' },
+                                { label: 'Apply to only exact quantity (Bulk)', value: 'exact' },
+                                { label: 'Apply to on bulk series like 2,4,6,8 etc', value: 'series' },
                               ]}
                               selected={formData.selectedRule}
                               onChange={(value) => handleInputChange('selectedRule', value)}
                             />
-                          </div>
+                        
                           <div className="discount-rules-fileds">
                             <FormLayout>
-                              {formData.selectedRule.includes('percentage') ? (
-                                <TextField
-                                  label="Discount %*"
-                                  onChange={(value) => handleInputChange('percenDisc', value)}
-                                  value={formData.percenDisc}
-                                  autoComplete="off"
-                                  error={ruleError ? "Some value is required" : ""}
+                            {formData.discountLevels.map((level, index) => (
+                              <div key={index} className="volume-discount-fields">
+                              <TextField label="Quantity*" autoComplete="off" 
+                                value={level.quantity}
+                                onChange={(value) => handleLevelChange(index, 'quantity', value)}
+                                error={levelError ? "add" : ""}
+                              />
+                              <div>
+                                  <Select
+                                  label="Discount Type*"
+                                  options={[
+                                    { label: 'Percentage Discount', value: 'percentage' },
+                                    { label: 'Fixed Amount Discount', value: 'fixed' },
+                                    { label: 'Fixed Product Price', value: 'product' }
+                                  ]}
+                                  value={level.discountType}
+                                  onChange={(value) => handleLevelChange(index, 'discountType', value)}
                                 />
-                              ) : (
-                                <TextField
-                                  label="Fixed Amount Discount*"
-                                  onChange={(value) => handleInputChange('fixDisc', value)}
-                                  value={formData.fixDisc}
-                                  autoComplete="off"
-                                  error={ruleError ? "Some value is required" : ""}
-                                />
-                              )}
-                            </FormLayout>
-                          </div>
-                        </BlockStack>
-                      </Card>
-                      <Card>
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingSm" fontWeight="semibold">
-                            Bundle box view
-                          </Text>
-                          <div className="discount-rules-fields">
-                            <Select
-                              label="Desktop Grid Per Row*"
-                              options={[
-                                { label: 1, value: 1 },
-                                { label: 2, value: 2 },
-                                { label: 3, value: 3 },
-                                { label: 4, value: 4 }
-                              ]}
-                              onChange={(value) => handleInputChange('selectedDesk', value)}
-                              value={formData.selectedDesk}
-                            />
-                            <Select
-                              label="Mobile Grid Per Row*"
-                              options={[
-                                { label: 1, value: 1 },
-                                { label: 2, value: 2 }
-                              ]}
-                              onChange={(value) => handleInputChange('selectedMob', value)}
-                              value={formData.selectedMob}
-                            />
-                          </div>
-                        </BlockStack>
-                      </Card>
-                      <Card>
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingSm" fontWeight="semibold">
-                            Offer Details
-                          </Text>
-                          <div className="offer-view-block">
-                            <FormLayout>
-                              <TextField
-                                label="Offer Button Text*"
-                                onChange={(value) => handleInputChange('btnText', value)}
-                                value={formData.btnText}
-                                autoComplete="off"
-                              />
-                              <TextField
-                                label="Offer Widget Title*"
-                                onChange={(value) => handleInputChange('widgetTitle', value)}
-                                value={formData.widgetTitle}
-                                autoComplete="off"
-                              />
-                            </FormLayout>
-                            <div className="offer-view-textarea">
-                              <TextField
-                                label="Description"
-                                value={formData.description}
-                                onChange={(value) => handleInputChange('description', value)}
-                                multiline={4}
-                                autoComplete="off"
-                              />
                             </div>
-                          </div>
-                        </BlockStack>
-                      </Card>
-                      <Card>
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingSm" fontWeight="semibold">
-                            Bundle Preview
-                          </Text>
-                          <div className="bundle-preview-box">
-                            <div className="bundle-preview-box-top"></div>
-                            <div className="bundle-preview-box-total-btn">
-                              <div className="bundle-preview-box-total">
-                                Total Price : <span className='price'>Rs:0.00</span> <span className='discount'><strike>Rs:0.00</strike></span>
+                            <TextField label="Discount Value*" autoComplete="off"
+                              value={level.discountValue}
+                              onChange={(value) => handleLevelChange(index, 'discountValue', value)}
+                              error={levelError ? "add" : ""}
+                              />
+                           
                               </div>
-                              <div className="bundle-preview-box-btn">
-                                <Button variant="primary">Add To Cart</Button>
-                              </div>
-                            </div>
+                                ))}
+                              <Button onClick={handleAddLevel} variant="primary">Add Level</Button>
+                          </FormLayout>
                           </div>
                         </BlockStack>
                       </Card>

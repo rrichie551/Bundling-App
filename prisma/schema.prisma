@@ -30,6 +30,7 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
   offers        Bundle[]
+  gifts         Gift[]
 }
 
 model Bundle {
@@ -60,3 +61,26 @@ model Bundle {
   type          String 
 }
 
+model Gift{
+  id            Int      @id @default(autoincrement())
+  title         String
+  amount        String?
+  offerDesc     String?
+  selected      String   @default("default")
+  selectedRule  String   @default("default")
+  status        String   @default("default")
+  channels      String   @default("default")
+  resources     String
+  giftProducts  String
+  upsell        String   @default("default")
+  behavior      String   @default("default")
+  startDate     DateTime?
+  endDate       DateTime?
+  percenDisc    String?
+  fixDisc       String?
+  userId        String
+  user          Session  @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  type          String 
+}
