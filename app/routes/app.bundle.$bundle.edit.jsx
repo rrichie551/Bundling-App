@@ -1,5 +1,5 @@
 import '../styles/style.css';
-import { useNavigate, Form, useNavigation } from '@remix-run/react';
+import { useNavigate, Form, useLoaderData, useNavigation } from '@remix-run/react';
 import { Page, FullscreenBar, Text, Button, Card, BlockStack, FormLayout, TextField, Layout, ChoiceList, Banner, InlineError, ResourceList, ResourceItem, Select, Spinner } from '@shopify/polaris';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import {DeleteIcon} from '@shopify/polaris-icons';
@@ -7,42 +7,62 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { authenticate } from "../shopify.server";
 
-export default function FreeGift() {
-  const navigation = useNavigation();
+export async function loader({params}) {
+    const discountId = params ? params.bundle : undefined;
+    const session = await prisma.session.findFirst();
+    console.log("This is the discount id: ",discountId);
+    if (!session) {
+      throw new Error("No session found. Please ensure you have at least one session in the database.");
+    }
+    const discountData  = await prisma.bundle.findFirst({
+        where: {
+          id: Number(discountId)
+        }
+      });
+    console.log("Discount data: ",discountData);
+    return discountData;
+  }
+
+export default function BundleEdit() {
+const navigation = useNavigation();
+  const data = useLoaderData();
+  console.log("This is the bundle data:",data);  
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [selectedItemsG, setSelectedItemsG] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(JSON.parse(data?.products));
   const [titleError, setTitleError] = useState(false)
   const [ruleError, setRuleError] = useState(false);
   const [productError, setProductError] = useState(false);
-  const [productErrorG, setProductErrorG] = useState(false);
   const [bannerError, setBannerError] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    offerDesc: '',
-    amount:'1.00',
-    selected: ['allProducts'],
-    selectedRule: ['percentage'],
-    status: ['active'],
-    channels: ['both'],
-    resources: [],
-    giftProducts: [],
-    upsell:['yes'],
-    behavior:['discontinue'],
-    startDate: null,
-    endDate: null,
-    percenDisc: '',
-    fixDisc: ''
+    title: data?.title,
+    offerDesc: data?.offerDesc,
+    selected: [`${data?.selected}`],
+    selectedRule: [`${data?.selectedRule}`],
+    selectedDesk: data?.selectedDesk,
+    selectedMob: data?.selectedMob,
+    description: data?.description,
+    status: [`${data?.status}`],
+    channels: [`${data?.channels}`],
+    products: JSON.parse(data?.products),
+    variants: JSON.parse(data?.variants),
+    priority: data?.priority,
+    startDate: data?.startDate,
+    endDate: data?.endDate,
+    percenDisc: data?.percenDisc,
+    fixDisc: data?.fixDisc,
+    widgetTitle: data?.widgetTitle,
+    btnText: data?.btnText
   });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+
   const handleInputChange = useCallback((key, value) => {
     if(key === 'selected'){
-        setFormData((prevData) => ({ ...prevData, resources:[] }));
+        setFormData((prevData) => ({ ...prevData, products:[] }));
         setFormData((prevData) => ({ ...prevData, [key]:value }));
     }
     else{
@@ -51,17 +71,13 @@ export default function FreeGift() {
    
   }, []);  
 
-const resourceName = {
-singular: formData.selected.includes('collections') ? 'collection' : 'product',
-plural: formData.selected.includes('collections') ? 'collections' : 'products',
-};
-const resourceName2 = {
+  const resourceName = {
     singular: 'product',
     plural: 'products',
-    };
+  };
 
-const handleResourcePicker = async (type) => {
-    const selectionIds = formData.resources.length > 0 ? formData.resources.map(product => ({ id: product.id })) : [];
+  const handleResourcePicker = async (type) => {
+    const selectionIds = formData.products.length > 0 ? formData.products.map(product => ({ id: product.id })) : [];
     const resourceList = await window.shopify.resourcePicker({
       type: type,
       filter: {
@@ -84,37 +100,16 @@ const handleResourcePicker = async (type) => {
   
     setFormData((prevData) => ({
       ...prevData,
-      resources: selectedResources
+      products: selectedResources
     }));
   };
-
-  const handleGiftProduct = async () => {
-    const selectionIds = formData.giftProducts.length > 0 ? formData.giftProducts.map(product => ({ id: product.id })) : [];
-    const resourceList = await window.shopify.resourcePicker({
-      type: 'product',
-      filter: {
-        hidden: false,
-        variants: true,
-        draft: false,
-        archived: false,
-      },
-      selectionIds,
-      action: "add",
-      multiple: true
-    });
   
-    const selectedResources = resourceList.map(resource => ({
-      id: resource.id,
-      name: resource.title,
-      url: resource.onlineStoreUrl || '#',
-      location: `${resource.totalVariants} ${resource.totalVariants > 1 ? 'Variants' : 'Variant'}`
-    }));
+  const getOnClickHandler = useMemo(() => {
+    return formData.selected.includes('product') 
+      ? () => handleResourcePicker('product') 
+      : () => handleResourcePicker('variant');
+  }, [formData.selected]);
   
-    setFormData((prevData) => ({
-      ...prevData,
-      giftProducts: selectedResources
-    }));
-  }; 
 
   const promotedBulkActions = useMemo(() => [
     {
@@ -124,40 +119,15 @@ const handleResourcePicker = async (type) => {
       onAction: () => {
         setFormData((prevData) => ({
           ...prevData,
-          resources: prevData.resources.filter(product => !selectedItems.includes(product.id))
+          products: prevData.products.filter(product => !selectedItems.includes(product.id))
         }));
         setSelectedItems([]); 
       }
     }
   ], [selectedItems]);
 
-  const promotedBulkActionsG = useMemo(() => [
-    {
-      content: 'Delete',
-      icon: DeleteIcon,
-      destructive: true,
-      onAction: () => {
-        setFormData((prevData) => ({
-          ...prevData,
-          giftProducts: prevData.giftProducts.filter(product => !selectedItemsG.includes(product.id))
-        }));
-        setSelectedItemsG([]); 
-      }
-    }
-  ], [selectedItemsG]);
-
-  const getOnClickHandler = useMemo(() => {
-    if (formData.selected.includes('products')) {
-      return () => handleResourcePicker('product');
-    } else if (formData.selected.includes('variants')) {
-      return () => handleResourcePicker('variant');
-    } else if (formData.selected.includes('collections')) {
-      return () => handleResourcePicker('collection');
-    }
-  }, [formData.selected]);
-
-
   const navigate = useNavigate();
+
   const handleFinalFormSub = useCallback(() => {
     setLoading(true);
     const form = document.getElementById('bundleDiscountForm');
@@ -167,23 +137,13 @@ const handleResourcePicker = async (type) => {
       setLoading(false);
       return;
     }
-    if(!formData.selected.includes('allProducts')){
-    if (formData.resources.length === 0) {
+    if (formData.products.length === 0) {
       setProductError(true);
       setTitleError(false);
       setBannerError(true);
       setLoading(false);
       return;
     }
-}
-    if (formData.giftProducts.length === 0) {
-        setProductErrorG(true);
-        setTitleError(false);
-        setProductError(false);
-        setBannerError(true);
-        setLoading(false);
-        return;
-      }
     if (formData.percenDisc === '') {
       setRuleError(true);
       setTitleError(false);
@@ -230,14 +190,14 @@ const handleResourcePicker = async (type) => {
           >
             <div style={{ marginLeft: '1rem', flexGrow: 1 }}>
               <Text variant="headingLg" as="p">
-                Free Gift
+                Bundle Discount
               </Text>
             </div>
             <Button variant="primary" onClick={handleFinalFormSub}>
               {loading ? (
                 <Spinner accessibilityLabel="Small spinner example" size="small" />
               ) : (
-                'Save'
+                'Save Bundle'
               )}
             </Button>
           </div>
@@ -286,37 +246,29 @@ const handleResourcePicker = async (type) => {
                         </Text>
                         <ChoiceList
                           choices={[
-                            { label: 'All products', value: 'allProducts', helpText: "Applies on all the products in the store." },
-                            { label: 'Product', value: 'products', helpText: "Selected products only" },
-                            { label: 'Variant', value: 'variants', helpText: "Selected variants only" },
-                            { label: 'Collection', value: 'collections', helpText: "Selected collections only" },
+                            { label: 'Product', value: 'product', helpText: "Offer bundle discount on full product." },
+                            { label: 'Variants', value: 'variants', helpText: "Offer bundle discount on selected variants instead of full product." },
                           ]}
                           selected={formData.selected}
                           onChange={(value) => handleInputChange('selected', value)}
                         />
                       </BlockStack>
                     </Card>
-                    {formData.selected.includes('allProducts') ? <></> : 
                     <Card>
                       <BlockStack gap="200">
                         <div className="products-add-top">
                           <Text as="h2" variant="headingSm" fontWeight="semibold">
-                            {formData.selected.includes('products') && <>Choose products</> }
-                            {formData.selected.includes('variants') && <>Choose products</> }
-                            {formData.selected.includes('collections') && <>Choose collections</> }
+                            Choose products
                           </Text>
-                          <Button variant="plain" onClick={getOnClickHandler}>
-                          {formData.selected.includes('products') && <> Add Products</> }
-                          {formData.selected.includes('variants') && <> Add Products</> }
-                          {formData.selected.includes('collections') && <> Add Collections</> }
-                        </Button>
+                          <Button variant="plain" onClick={getOnClickHandler}>Add Products</Button>
                         </div>
                         {productError &&
                           <InlineError message="At-least one product is required." fieldID="myFieldID" />
                         }
+                        {formData.selected.includes('product') ? (
                           <ResourceList
                             resourceName={resourceName}
-                            items={formData.resources}
+                            items={formData.products}
                             renderItem={(item) => {
                               const { id, name, location } = item;
                               return (
@@ -328,7 +280,7 @@ const handleResourcePicker = async (type) => {
                                     <Text variant="bodyMd" fontWeight="bold" as="h3">
                                       {name}
                                     </Text>
-                                    {formData.selected.includes('products') && <div><i>{location}</i></div>}
+                                    <div><i>{location}</i></div>
                                   </ResourceItem>
                                 </div>
                               );
@@ -337,27 +289,12 @@ const handleResourcePicker = async (type) => {
                             onSelectionChange={setSelectedItems}
                             promotedBulkActions={promotedBulkActions}
                           />
-                      </BlockStack>
-                    </Card>
-                    }
-                     <Card>
-                      <BlockStack gap="200">
-                        <div className="products-add-top">
-                          <Text as="h2" variant="headingSm" fontWeight="semibold">
-                            Choose gift products
-                          </Text>
-                          <Button variant="plain" onClick={handleGiftProduct}>
-                            Add Products
-                        </Button>
-                        </div>
-                        {productErrorG &&
-                          <InlineError message="At-least one product is required." fieldID="myFieldID" />
-                        }
+                        ) : (
                           <ResourceList
-                            resourceName={resourceName2}
-                            items={formData.giftProducts}
+                            resourceName={resourceName}
+                            items={formData.products}
                             renderItem={(item) => {
-                              const { id, name, location } = item;
+                              const { id, name } = item;
                               return (
                                 <div className='products-list-item'>
                                   <ResourceItem
@@ -367,28 +304,15 @@ const handleResourcePicker = async (type) => {
                                     <Text variant="bodyMd" fontWeight="bold" as="h3">
                                       {name}
                                     </Text>
-                                   <div><i>{location}</i></div>
                                   </ResourceItem>
                                 </div>
                               );
                             }}
-                            selectedItems={selectedItemsG}
-                            onSelectionChange={setSelectedItemsG}
-                            promotedBulkActions={promotedBulkActionsG}
+                            selectedItems={selectedItems}
+                            onSelectionChange={setSelectedItems}
+                            promotedBulkActions={promotedBulkActions}
                           />
-                      </BlockStack>
-                    </Card>
-                    <Card>
-                      <BlockStack gap="200">
-                        <Text as="h2" variant="headingSm" fontWeight="semibold">
-                        Offer threshold
-                        </Text>
-                        <FormLayout>
-                          <TextField label="Minimum Cart Subtotal (Threshold Amount)*" autoComplete="off" value={formData.amount}
-                            onChange={(value) => handleInputChange('amount', value)} 
-                          />
-                          <p className='greyP2'>It will verify the cart total before applying any discounts.</p>
-                        </FormLayout>
+                        )}
                       </BlockStack>
                     </Card>
                     <Card>
@@ -426,6 +350,85 @@ const handleResourcePicker = async (type) => {
                               />
                             )}
                           </FormLayout>
+                        </div>
+                      </BlockStack>
+                    </Card>
+                    <Card>
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingSm" fontWeight="semibold">
+                          Bundle box view
+                        </Text>
+                        <div className="discount-rules-fields">
+                          <Select
+                            label="Desktop Grid Per Row*"
+                            options={[
+                              { label: 1, value: 1 },
+                              { label: 2, value: 2 },
+                              { label: 3, value: 3 },
+                              { label: 4, value: 4 }
+                            ]}
+                            onChange={(value) => handleInputChange('selectedDesk', value)}
+                            value={formData.selectedDesk}
+                          />
+                          <Select
+                            label="Mobile Grid Per Row*"
+                            options={[
+                              { label: 1, value: 1 },
+                              { label: 2, value: 2 }
+                            ]}
+                            onChange={(value) => handleInputChange('selectedMob', value)}
+                            value={formData.selectedMob}
+                          />
+                        </div>
+                      </BlockStack>
+                    </Card>
+                    <Card>
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingSm" fontWeight="semibold">
+                          Offer Details
+                        </Text>
+                        <div className="offer-view-block">
+                          <FormLayout>
+                            <TextField
+                              label="Offer Button Text*"
+                              onChange={(value) => handleInputChange('btnText', value)}
+                              value={formData.btnText}
+                              autoComplete="off"
+                            />
+                            <TextField
+                              label="Offer Widget Title*"
+                              onChange={(value) => handleInputChange('widgetTitle', value)}
+                              value={formData.widgetTitle}
+                              autoComplete="off"
+                            />
+                          </FormLayout>
+                          <div className="offer-view-textarea">
+                            <TextField
+                              label="Description"
+                              value={formData.description}
+                              onChange={(value) => handleInputChange('description', value)}
+                              multiline={4}
+                              autoComplete="off"
+                            />
+                          </div>
+                        </div>
+                      </BlockStack>
+                    </Card>
+                    <Card>
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingSm" fontWeight="semibold">
+                          Bundle Preview
+                        </Text>
+                        <div className="bundle-preview-box">
+                          <div className="bundle-preview-box-top"></div>
+                          <div className="bundle-preview-box-total-btn">
+                            <div className="bundle-preview-box-total">
+                              Total Price : <span className='price'>Rs:0.00</span> <span className='discount'><strike>Rs:0.00</strike></span>
+                            </div>
+                            <div className="bundle-preview-box-btn">
+                              <Button variant="primary">Add To Cart</Button>
+                            </div>
+                          </div>
                         </div>
                       </BlockStack>
                     </Card>
@@ -468,16 +471,21 @@ const handleResourcePicker = async (type) => {
                     <Card>
                       <BlockStack gap="200">
                         <Text as="h2" variant="headingSm" fontWeight="semibold">
-                        Show an upsell popup on cart page
+                          Priority
                         </Text>
-                        <ChoiceList
-                          choices={[
-                            { label: 'Yes', value: 'yes' },
-                            { label: 'No', value: 'no' }
-                          ]}
-                          selected={formData.upsell}
-                          onChange={(value) => handleInputChange('upsell', value)}
-                        />
+                        <div className="discount-rules-fields">
+                          <Select
+                            options={[
+                              { label: 1, value: 1 },
+                              { label: 2, value: 2 },
+                              { label: 3, value: 3 },
+                              { label: 4, value: 4 }
+                            ]}
+                            onChange={(value) => handleInputChange('priority', value)}
+                            value={formData.priority}
+                          />
+                        </div>
+                        <p className='greyP2'>In case a product/variant is present in two different bundles, the bundle with the highest priority (lowest number) will be shown and applied.</p>
                       </BlockStack>
                     </Card>
                     <div className="publishing-date-card-box">
@@ -504,22 +512,6 @@ const handleResourcePicker = async (type) => {
                         </BlockStack>
                       </Card>
                     </div>
-                    <Card>
-                      <BlockStack gap="200">
-                        <Text as="h2" variant="headingSm" fontWeight="semibold">
-                        Discount behavior
-                        </Text>
-                        <p className='greyP'>Evaluates the next free gift discount behavior.</p>
-                        <ChoiceList
-                          choices={[
-                            { label: 'Continue', value: 'continue', helpText: "This will continue assessing subsequent gift discounts." },
-                            { label: 'Discontinue', value: 'discontinue', helpText: "This will stop further checks for additional gift discounts." }
-                          ]}
-                          selected={formData.behavior}
-                          onChange={(value) => handleInputChange('behavior', value)}
-                        />
-                      </BlockStack>
-                    </Card>
                   </div>
                 </Layout.Section>
               </Layout>
@@ -532,37 +524,43 @@ const handleResourcePicker = async (type) => {
   )
 }
 
-export const action = async ({ request }) => {
-  const { admin,redirect } = await authenticate.admin(request);
-  const formData = await request.formData();
-  const session = await prisma.session.findFirst();
-    if (!session) {
-      throw new Error("No session found. Please ensure you have at least one session in the database.");
-    }
-
-  const offerData = {
-    title: formData.get('title'),
-    amount: formData.get('amount'),
-    offerDesc: formData.get('offerDesc'),
-    selected:formData.get('selected'), 
-    selectedRule:formData.get('selectedRule'),
-    status:formData.get('status'),
-    channels:formData.get('channels'), 
-    resources: formData.get('resources'),
-    giftProducts: formData.get('giftProducts'),
-    upsell:formData.get('upsell'),
-    behavior:formData.get('behavior'),
-    startDate: formData.get('startDate') === 'null' ? new Date() : new Date(formData.get('startDate')),
-    endDate: formData.get('endDate') === 'null' ? null :  new Date(formData.get('endDate')),
-    percenDisc: formData.get('percenDisc'),
-    fixDisc: formData.get('fixDisc'),
-    type: 'Free Gift',
-    userId: session.id
+export const action = async ({ request, params }) => {
+    const { admin,redirect } = await authenticate.admin(request);
+    const discountId = params ? params.bundle : undefined;
+      const formData = await request.formData();
+      const session = await prisma.session.findFirst();
+        if (!session) {
+          throw new Error("No session found. Please ensure you have at least one session in the database.");
+        }
     
-  };
-
-  await prisma.gift.create({ data: offerData });
-
-  return redirect('/app/offers');
-};
-
+      const offerData = {
+        title: formData.get('title'),
+        offerDesc: formData.get('offerDesc'),
+        selected:formData.get('selected'), 
+        selectedRule:formData.get('selectedRule'),
+        selectedDesk: Number(formData.get('selectedDesk')),
+        selectedMob: Number(formData.get('selectedMob')),
+        description: formData.get('description'),
+        status:formData.get('status'),
+        channels:formData.get('channels'), 
+        products: formData.get('products'), 
+        variants: formData.get('variants'),
+        priority: Number(formData.get('priority')),
+        startDate: formData.get('startDate') === 'null' ? new Date() : new Date(formData.get('startDate')),
+        endDate: formData.get('endDate') === 'null' ? null :  new Date(formData.get('endDate')),
+        percenDisc: formData.get('percenDisc'),
+        fixDisc: formData.get('fixDisc'),
+        widgetTitle: formData.get('widgetTitle'),
+        btnText: formData.get('btnText'),
+        type: 'Bundle Discount',
+        userId: session.id
+        
+      };
+    
+      await prisma.bundle.update({
+        where: { id: Number(discountId) },
+        data: offerData,
+      });
+    
+      return redirect('/app/offers');
+    }
